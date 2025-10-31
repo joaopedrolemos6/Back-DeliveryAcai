@@ -1,0 +1,237 @@
+openapi: 3.1.0
+info:
+  title: Açaí Delivery API (V1)
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/v1
+
+paths:
+  /auth/register:
+    post:
+      summary: Registrar usuário (CLIENT por padrão)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, password]
+              properties:
+                name: { type: string, minLength: 2 }
+                email: { type: string, format: email }
+                phone: { type: string }
+                password: { type: string, minLength: 6 }
+      responses:
+        "201": { description: Created }
+
+  /auth/login:
+    post:
+      summary: Login por e-mail ou telefone + senha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier: { type: string }
+                password: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /auth/refresh:
+    post:
+      summary: Rotaciona refresh token e emite novos tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /auth/logout:
+    post:
+      summary: Revoga o refresh token informado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "204": { description: No Content }
+
+  /categories:
+    get:
+      summary: Listar categorias
+      responses: { "200": { description: OK } }
+    post:
+      summary: Criar categoria (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses: { "201": { description: Created } }
+
+  /categories/{id}:
+    patch:
+      summary: Atualizar categoria (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "200": { description: OK } }
+    delete:
+      summary: Remover categoria (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "204": { description: No Content } }
+
+  /products:
+    get:
+      summary: Lista paginada de produtos (público)
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string, format: uuid }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 100, default: 12 }
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Criar produto (ADMIN) — descrição/imagem opcionais
+      security: [{ bearerAuth: [] }]
+      responses: { "201": { description: Created } }
+
+  /products/{id}:
+    get:
+      summary: Detalhar produto (público)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "200": { description: OK } }
+    patch:
+      summary: Atualizar produto (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "200": { description: OK } }
+    delete:
+      summary: Remover produto (ADMIN)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "204": { description: No Content } }
+
+  /addresses:
+    get:
+      summary: Listar meus endereços
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { description: OK } }
+    post:
+      summary: Criar endereço (owner)
+      security: [{ bearerAuth: [] }]
+      responses: { "201": { description: Created } }
+
+  /addresses/{id}:
+    patch:
+      summary: Atualizar endereço (owner)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "200": { description: OK } }
+    delete:
+      summary: Remover endereço (owner)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "204": { description: No Content } }
+
+  /orders:
+    get:
+      summary: Listar meus pedidos
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { description: OK } }
+    post:
+      summary: Criar pedido (CLIENT) — valida loja aberta/raio/mínimo
+      security: [{ bearerAuth: [] }]
+      responses: { "201": { description: Created } }
+
+  /orders/{id}:
+    get:
+      summary: Ver pedido (owner ou admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "200": { description: OK } }
+
+  /admin/orders:
+    get:
+      summary: Listar pedidos (ADMIN) com filtros
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { description: OK } }
+
+  /admin/orders/{id}/status:
+    patch:
+      summary: Atualizar status do pedido (ADMIN) — baixa estoque em CONFIRMED
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses: { "200": { description: OK } }
+
+  /admin/store-settings:
+    get:
+      summary: Ver configurações da loja (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { description: OK } }
+    put:
+      summary: Atualizar configurações da loja (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { description: OK } }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    /* Output */
+    "outDir": "dist",
+    "rootDir": "src",
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+
+    /* Paths */
+    "baseUrl": "./src",
+    "paths": {
+      "@app/*": ["app/*"],
+      "@core/*": ["core/*"],
+      "@infra/*": ["infra/*"],
+      "@config/*": ["config/*"]
+    },
+
+    /* Type Checking */
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Node.js */
+    "types": ["node"],
+
+    /* Source maps for debugging */
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

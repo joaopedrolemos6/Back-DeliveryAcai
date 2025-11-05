@@ -3,7 +3,7 @@ import { categoriesRepo } from "../../../infra/repositories/categories.repo";
 import { NotFoundError, BadRequestError } from "../../errors/app-error";
 
 /**
- * Lista produtos com filtros opcionais.
+ * Lista produtos com filtros opcionais (com paginação, busca e ordenação)
  */
 export async function listProducts(params?: {
   categoryId?: string;
@@ -12,8 +12,8 @@ export async function listProducts(params?: {
   pageSize?: number;
   sort?: "asc" | "desc";
 }) {
-  const page = params?.page ?? 1;
-  const pageSize = params?.pageSize ?? 12;
+  const page = Number(params?.page ?? 1);
+  const pageSize = Number(params?.pageSize ?? 12);
   const offset = (page - 1) * pageSize;
 
   const [products, total] = await productsRepo.list({
@@ -36,16 +36,16 @@ export async function listProducts(params?: {
 }
 
 /**
- * Busca produto por ID.
+ * Busca produto por ID
  */
 export async function getProduct(id: string) {
   const product = await productsRepo.findById(id);
-  if (!product) throw new NotFoundError("Product");
+  if (!product) throw new NotFoundError("Product not found");
   return product;
 }
 
 /**
- * Cria novo produto.
+ * Cria novo produto
  */
 export async function createProduct(input: {
   category_id?: string | null;
@@ -55,16 +55,17 @@ export async function createProduct(input: {
   image_url?: string | null;
   is_available?: boolean;
 }) {
-  if (!input.name || !input.price_cents) {
+  if (!input.name?.trim() || !input.price_cents) {
     throw new BadRequestError("Name and price are required");
   }
 
-  // Valida categoria se informada
+  // 🔍 Valida categoria se informada
   if (input.category_id) {
     const category = await categoriesRepo.findById(input.category_id);
-    if (!category) throw new NotFoundError("Category");
+    if (!category) throw new NotFoundError("Category not found");
   }
 
+  // 💾 Cria registro
   const id = await productsRepo.insert({
     category_id: input.category_id ?? null,
     name: input.name.trim(),
@@ -74,11 +75,12 @@ export async function createProduct(input: {
     is_available: input.is_available ?? true,
   });
 
-  return { id, ...input };
+  const newProduct = await productsRepo.findById(id);
+  return newProduct;
 }
 
 /**
- * Atualiza um produto existente.
+ * Atualiza produto existente
  */
 export async function updateProduct(
   id: string,
@@ -92,23 +94,27 @@ export async function updateProduct(
   }>
 ) {
   const product = await productsRepo.findById(id);
-  if (!product) throw new NotFoundError("Product");
+  if (!product) throw new NotFoundError("Product not found");
 
+  // 🔍 Valida categoria se informada
   if (input.category_id) {
     const cat = await categoriesRepo.findById(input.category_id);
-    if (!cat) throw new NotFoundError("Category");
+    if (!cat) throw new NotFoundError("Category not found");
   }
 
   await productsRepo.update(id, input);
-  return { id, ...product, ...input };
+
+  const updated = await productsRepo.findById(id);
+  return updated;
 }
 
 /**
- * Remove um produto.
+ * Remove um produto
  */
 export async function deleteProduct(id: string) {
   const product = await productsRepo.findById(id);
-  if (!product) throw new NotFoundError("Product");
+  if (!product) throw new NotFoundError("Product not found");
+
   await productsRepo.remove(id);
   return { success: true };
 }

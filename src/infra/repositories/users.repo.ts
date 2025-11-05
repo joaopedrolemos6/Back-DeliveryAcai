@@ -12,7 +12,7 @@ interface InsertUserDTO {
 }
 
 export const usersRepo = {
-  // 🔍 Buscar por e-mail ou telefone (login)
+  // 🔍 Buscar por e-mail OU telefone (login)
   async findByEmailOrPhone(identifier: string) {
     const [rows] = await pool.query(
       `SELECT id, name, email, phone, password_hash, role, is_active
@@ -24,7 +24,7 @@ export const usersRepo = {
     return (rows as any[])[0] ?? null;
   },
 
-  // 🔍 Buscar por e-mail e/ou telefone (novo método)
+  // 🔍 Buscar por e-mail e/ou telefone (uso em cadastro para checar duplicidade)
   async findByEmailOrPhoneFlexible(email?: string, phone?: string) {
     const conditions: string[] = [];
     const params: any[] = [];
@@ -42,7 +42,7 @@ export const usersRepo = {
 
     const where = conditions.join(" OR ");
     const [rows] = await pool.query(
-      `SELECT id, name, email, phone, password_hash, role
+      `SELECT id, name, email, phone, password_hash, role, is_active
        FROM users
        WHERE ${where}
        LIMIT 1`,
@@ -52,7 +52,7 @@ export const usersRepo = {
     return (rows as any[])[0] ?? null;
   },
 
-  // ➕ Inserir novo usuário
+  // ➕ Inserir novo usuário (usado no cadastro)
   async insert(u: InsertUserDTO) {
     await pool.query(
       `INSERT INTO users (id, name, email, phone, password_hash, role, is_active, created_at, updated_at)
@@ -61,7 +61,7 @@ export const usersRepo = {
     );
   },
 
-  // ➕ Inserir novo usuário (versão detalhada do modelo alternativo)
+  // ➕ Inserção detalhada (modo alternativo, mais explícito)
   async insertDetailed(user: {
     id: string;
     name: string;
@@ -95,7 +95,7 @@ export const usersRepo = {
     return (rows as any[])[0] ?? null;
   },
 
-  // 🏠 Buscar usuário com endereços
+  // 🏠 Buscar usuário com endereços vinculados
   async findByIdWithAddresses(id: string) {
     const [userRows] = await pool.query(
       `SELECT id, name, email, phone, role, is_active, created_at

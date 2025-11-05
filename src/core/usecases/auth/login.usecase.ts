@@ -11,20 +11,36 @@ const ACCESS_EXPIRES = process.env.JWT_ACCESS_EXPIRES || "15m";
 const REFRESH_EXPIRES = process.env.JWT_REFRESH_EXPIRES || "7d";
 
 export async function login(input: { identifier: string; password: string }) {
+  // Busca o usuário por email OU telefone
   const user = await usersRepo.findByEmailOrPhone(input.identifier);
+  if (!user) {
+    throw new UnauthorizedError("Invalid credentials");
+  }
 
-  if (!user) throw new UnauthorizedError("Invalid credentials");
+  if (user.is_active === 0) {
+    throw new UnauthorizedError("Account is inactive");
+  }
 
+  // Verifica senha
   const valid = await compare(input.password, user.password_hash);
-  if (!valid) throw new UnauthorizedError("Invalid credentials");
+  if (!valid) {
+    throw new UnauthorizedError("Invalid credentials");
+  }
 
+  // Gera tokens JWT
   const jti = uuid();
-  const accessToken = jwt.sign({ sub: user.id, role: user.role }, ACCESS_SECRET, {
-    expiresIn: ACCESS_EXPIRES,
-  });
-  const refreshToken = jwt.sign({ sub: user.id, jti }, REFRESH_SECRET, {
-    expiresIn: REFRESH_EXPIRES,
-  });
+
+  const accessToken = jwt.sign(
+    { sub: user.id, role: user.role },
+    ACCESS_SECRET,
+    { expiresIn: ACCESS_EXPIRES }
+  );
+
+  const refreshToken = jwt.sign(
+    { sub: user.id, jti },
+    REFRESH_SECRET,
+    { expiresIn: REFRESH_EXPIRES }
+  );
 
   const hashedToken = await hash(refreshToken, 10);
   const expiresAt = new Date(Date.now() + msToMs(REFRESH_EXPIRES));
@@ -49,6 +65,7 @@ export async function login(input: { identifier: string; password: string }) {
   };
 }
 
+// 🧮 Converte formatos como "15m" ou "7d" para milissegundos
 function msToMs(exp: string): number {
   const match = exp.match(/^(\d+)([smhd])$/);
   if (!match) return 0;

@@ -1,18 +1,19 @@
 import { pool } from "../db/connection";
 
 export const productsRepo = {
+  // ✅ Lista produtos com filtros, busca e paginação
   async list({
     categoryId,
     q,
-    sort,
-    limit,
-    offset,
+    sort = "asc",
+    limit = 50,
+    offset = 0,
   }: {
     categoryId?: string;
     q?: string;
     sort?: "asc" | "desc";
-    limit: number;
-    offset: number;
+    limit?: number;
+    offset?: number;
   }) {
     const where: string[] = [];
     const params: any[] = [];
@@ -29,7 +30,9 @@ export const productsRepo = {
     const whereClause = where.length ? "WHERE " + where.join(" AND ") : "";
 
     const [rows] = await pool.query(
-      `SELECT * FROM products ${whereClause} ORDER BY created_at ${sort} LIMIT ? OFFSET ?`,
+      `SELECT * FROM products ${whereClause}
+       ORDER BY created_at ${sort}
+       LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
@@ -37,16 +40,21 @@ export const productsRepo = {
       `SELECT COUNT(*) as total FROM products ${whereClause}`,
       params
     );
-    const total = (countRows as any[])[0]?.total ?? 0;
 
+    const total = (countRows as any[])[0]?.total ?? 0;
     return [rows as any[], total];
   },
 
+  // ✅ Busca produto por ID
   async findById(id: string) {
-    const [rows] = await pool.query("SELECT * FROM products WHERE id=? LIMIT 1", [id]);
+    const [rows] = await pool.query(
+      "SELECT * FROM products WHERE id=? LIMIT 1",
+      [id]
+    );
     return (rows as any[])[0] ?? null;
   },
 
+  // ✅ Cria produto
   async insert(data: {
     category_id: string | null;
     name: string;
@@ -56,8 +64,16 @@ export const productsRepo = {
     is_available: boolean;
   }) {
     const [result] = await pool.query(
-      `INSERT INTO products (category_id,name,description,price_cents,image_url,is_available,created_at,updated_at)
-       VALUES (?,?,?,?,?,?,NOW(),NOW())`,
+      `INSERT INTO products (
+        category_id,
+        name,
+        description,
+        price_cents,
+        image_url,
+        is_available,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         data.category_id,
         data.name,
@@ -71,6 +87,7 @@ export const productsRepo = {
     return result.insertId;
   },
 
+  // ✅ Atualiza produto
   async update(id: string, fields: Record<string, any>) {
     const keys = Object.keys(fields);
     if (!keys.length) return;
@@ -82,6 +99,7 @@ export const productsRepo = {
     );
   },
 
+  // ✅ Remove produto
   async remove(id: string) {
     await pool.query("DELETE FROM products WHERE id=?", [id]);
   },

@@ -1,33 +1,47 @@
 import { Request, Response, NextFunction } from "express";
-import { login } from "../../core/usecases/auth/login.usecase";
-import { register } from "../../core/usecases/auth/register.usecase";
-import { refresh } from "../../core/usecases/auth/refresh-token.usecase";
-import { logout } from "../../core/usecases/auth/logout.usecase";
+import * as loginUseCase from "../../core/usecases/auth/login.usecase";
+import * as registerUseCase from "../../core/usecases/auth/register.usecase";
+import * as refreshUseCase from "../../core/usecases/auth/refresh-token.usecase";
+import * as logoutUseCase from "../../core/usecases/auth/logout.usecase";
 
 export const AuthController = {
-  async register(req: Request, res: Response, next: NextFunction){
+  async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const out = await register(req.body);
-      res.status(201).json({ success: true, data: out });
-    } catch (e){ next(e); }
+      const { name, email, phone, password } = req.body;
+      const user = await registerUseCase.registerUser({ name, email, phone, password });
+      return res.status(201).json({ success: true, data: user });
+    } catch (err) {
+      next(err);
+    }
   },
-  async login(req: Request, res: Response, next: NextFunction){
+
+  async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { identifier, password } = req.body;
-      const out = await login(identifier, password);
-      res.json({ success: true, data: out });
-    } catch (e){ next(e); }
+      const out = await loginUseCase.login({ identifier, password });
+      return res.json({ success: true, data: out });
+    } catch (err) {
+      next(err);
+    }
   },
-  async refresh(req: Request, res: Response, next: NextFunction){
+
+  async refresh(req: Request, res: Response, next: NextFunction) {
     try {
-      const out = await refresh(req.body.refreshToken);
-      res.json({ success: true, data: out });
-    } catch (e){ next(e); }
+      const { refreshToken } = req.body;
+      const out = await refreshUseCase.refresh({ refreshToken });
+      return res.json({ success: true, data: out });
+    } catch (err) {
+      next(err);
+    }
   },
-  async logout(req: Request, res: Response, next: NextFunction){
+
+  async logout(req: Request, res: Response, next: NextFunction) {
     try {
-      await logout(req.body.refreshToken);
-      res.status(204).send();
-    } catch (e){ next(e); }
-  }
+      const { refreshToken } = req.body;
+      await logoutUseCase.logout({ refreshToken });
+      return res.status(204).json({ success: true });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

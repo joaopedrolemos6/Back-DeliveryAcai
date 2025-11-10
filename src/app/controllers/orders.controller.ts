@@ -8,10 +8,14 @@ export const OrdersController = {
   // 🛒 Criar pedido
   async create(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = (req as any).user;
+      if (!user?.id) throw new Error("Usuário não autenticado");
+
       const out = await createCase.createOrder({
-        userId: (req as any).user.id,
+        userId: user.id,
         ...req.body,
       });
+
       res.status(201).json({ success: true, data: out });
     } catch (e) {
       next(e);
@@ -21,12 +25,13 @@ export const OrdersController = {
   // 📋 Listar pedidos do cliente autenticado
   async listMine(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, pageSize = 10 } = req.query as any;
-      const out = await listCase.listByUser(
-        (req as any).user.id,
-        Number(page),
-        Number(pageSize)
-      );
+      const user = (req as any).user;
+      if (!user?.id) throw new Error("Usuário não autenticado");
+
+      const page = Number(req.query.page) || 1;
+      const pageSize = Number(req.query.pageSize) || 10;
+
+      const out = await listCase.listByUser(user.id, page, pageSize);
       res.json({ success: true, data: out });
     } catch (e) {
       next(e);
@@ -36,10 +41,10 @@ export const OrdersController = {
   // 🔎 Obter detalhes de um pedido
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const out = await getCase.getByIdOwnerOrAdmin(
-        (req as any).user,
-        req.params.id
-      );
+      const user = (req as any).user;
+      if (!user?.id) throw new Error("Usuário não autenticado");
+
+      const out = await getCase.getByIdOwnerOrAdmin(user, req.params.id);
       res.json({ success: true, data: out });
     } catch (e) {
       next(e);
@@ -49,13 +54,18 @@ export const OrdersController = {
   // ⚙️ Atualizar status de um pedido (somente ADMIN)
   async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = (req as any).user;
+      if (!user?.id) throw new Error("Usuário não autenticado");
+
       const { id } = req.params;
       const { status } = req.body;
+
+      if (!status) throw new Error("Status não fornecido");
 
       const out = await updateCase.updateStatus({
         orderId: id,
         newStatus: status,
-        updatedBy: (req as any).user.id,
+        updatedBy: user.id,
       });
 
       res.json({ success: true, data: out });

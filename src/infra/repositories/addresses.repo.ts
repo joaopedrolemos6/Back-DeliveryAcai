@@ -6,10 +6,17 @@ export const addressesRepo = {
       FROM addresses WHERE user_id=? ORDER BY created_at DESC`, [user_id]);
     return rows as any[];
   },
+
+  async findById(id: string) {
+    const [rows] = await pool.query(`SELECT * FROM addresses WHERE id=?`, [id]);
+    return (rows as any[])[0] ?? null;
+  },
+
   async findOwnedById(user_id:string, id:string){
     const [rows] = await pool.query(`SELECT * FROM addresses WHERE id=? AND user_id=?`, [id, user_id]);
     return (rows as any[])[0] ?? null;
   },
+
   async insert(a:any){
     await pool.query(
       `INSERT INTO addresses (id,user_id,street,number,complement,district,city,state,zip,latitude,longitude,created_at)
@@ -17,6 +24,7 @@ export const addressesRepo = {
       [a.id, a.user_id, a.street, a.number, a.complement ?? null, a.district ?? null, a.city, a.state, a.zip, a.latitude ?? null, a.longitude ?? null]
     );
   },
+
   async updateOwned(user_id:string, id:string, a:any){
     const [ret] = await pool.query(
       `UPDATE addresses SET
@@ -28,6 +36,7 @@ export const addressesRepo = {
     );
     return (ret as any).affectedRows > 0;
   },
+
   async deleteOwned(user_id:string, id:string){
     const [ret] = await pool.query(`DELETE FROM addresses WHERE id=? AND user_id=?`, [id, user_id]);
     return (ret as any).affectedRows > 0;

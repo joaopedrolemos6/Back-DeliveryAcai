@@ -103,4 +103,17 @@ export const productsRepo = {
   async remove(id: string) {
     await pool.query("DELETE FROM products WHERE id=?", [id]);
   },
+
+  // ✅ Busca múltiplos produtos por uma lista de IDs
+  async findManyByIds(ids: string[]) {
+    if (!ids.length) return [];
+
+    const placeholders = ids.map(() => "?").join(",");
+    const [rows] = await pool.query(
+      `SELECT * FROM products WHERE id IN (${placeholders})`,
+      ids
+    );
+
+    return rows as any[];
+  }
 };

@@ -1,31 +1,21 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../../core/errors/app-error";
-import { logger } from "../../infra/logging/logger";
 
-export function errorMiddleware(err: any, req: Request, res: Response, _next: NextFunction) {
-  // 🔥 Log detalhado para debug
-  console.error("🔥 ERROR:", {
-    name: err?.name,
-    message: err?.message,
-    stack: err?.stack,
-    code: err?.code,
-  });
+export function errorMiddleware(
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  console.error("Erro capturado:", err);
 
-  if (err instanceof AppError) {
-    logger.warn({ err, path: req.path }, "AppError handled");
-    return res.status(err.statusCode).json({
-      success: false,
-      error: {
-        code: err.code,
-        message: err.message,
-        details: err.details,
-      },
-    });
-  }
+  // Se o erro tiver um statusCode válido, usa ele. Caso contrário, assume 500.
+  const statusCode = typeof err.statusCode === "number" && err.statusCode >= 100 && err.statusCode <= 599
+    ? err.statusCode
+    : 500;
 
-  logger.error({ err, path: req.path }, "Unhandled error");
-  return res.status(500).json({
+  res.status(statusCode).json({
     success: false,
-    error: { code: "INTERNAL_SERVER_ERROR", message: "Unexpected error occurred." },
+    message: err.message || "Erro interno no servidor",
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
 }
